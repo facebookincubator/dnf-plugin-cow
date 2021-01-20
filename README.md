@@ -5,14 +5,14 @@ Plugin to enable Copy on Write mechanics for RPM within `dnf`. This code, combin
 # Installation
 
 ```
-dnf install dnf-plugin-cow
+dnf install python3-dnf-plugin-cow
 ```
 
 # Requirements
 
-* `rpm` with cow/transcoding support (see https://github.com/malmond77/rpm/tree/cow for work in progress)
-* `rpm-plugin-reflink` installed to handle install mechanics for extent based rpms)
-* `librepo` with transcoding support (see https://github.com/malmond77/librepo/tree/transcode_cow for work in progress)
+* `rpm` with cow/transcoding support (see https://github.com/rpm-software-management/rpm/pull/1470)
+* `rpm-plugin-reflink` installed to handle install mechanics for extent based rpms
+* `librepo` with transcoding support (see https://github.com/rpm-software-management/librepo/pull/222)
 * Support for reflinking between `dnf` cache (typically `/var/cache/dnf`) and the paths included in RPMs. In the most common case this means a root filesystem with btrfs.
 
 ## Background
