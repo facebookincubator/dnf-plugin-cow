@@ -11,7 +11,7 @@ Summary: DNF plugin to enable Copy on Write in RPM
 URL:     https://github.com/facebookincubator/dnf-plugin-cow
 License: MIT
 
-Source0: https://github.com/facebookincubator/dnf-plugin-cow/archive/%{version}/%{name}-%{version}.tar.gz
+Source0: https://github.com/facebookincubator/dnf-plugin-cow/archive/%{version}.tar.gz
 
 BuildArch: noarch
 BuildRequires: python3-devel
