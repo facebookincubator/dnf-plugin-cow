@@ -1,8 +1,3 @@
-# Copyright (c) Facebook, Inc. and its affiliates.
-#
-# This source code is licensed under the MIT license found in the
-# LICENSE file in the root directory of this source tree.
-#
 %{!?dnf_lowest_compatible: %global dnf_lowest_compatible 4.2.23}
 Name:    dnf-plugin-cow
 Version: 0.0.1
@@ -29,10 +24,21 @@ Recommends: /usr/bin/rpm2extents
 Recommends: rpm-plugin-reflink
 
 %description -n python3-%{name}
-Enables Copy On Write in DNF and RPM.
+Installing this package enables a DNF plugin which changes the behaviour of
+librepo. Instead of downloading rpm files directly into cache before
+installation they will be "transcoded" into "extent based" rpms which contain
+all the constituent files of the rpm already uncompressed. This package
+depends on a version of rpm which includes /usr/bin/rpm2extents and the
+sub-package rpm-plugin-reflink which understands these "extent based" rpms
+and can install files without copying the underlying data.
+
+This package broadly assumes the root filesystem supports copy on write /
+reflink'ing. Today this means btrfs or xfs.
 
 %prep
 %autosetup -n %{name}-%{version}
+
+%build
 
 %install
 install -D -p reflink.conf %{buildroot}%{_sysconfdir}/dnf/plugins/reflink.conf
