@@ -11,7 +11,7 @@ Summary: DNF plugin to enable Copy on Write in RPM
 URL:     https://github.com/facebookincubator/dnf-plugin-cow
 License: MIT
 
-Source0: https://github.com/facebookincubator/dnf-plugin-cow/archive/%{version}.tar.gz
+Source0: %{url}/archive/%{version}/%{name}-%{version}.tar.gz
 
 BuildArch: noarch
 BuildRequires: python3-devel
@@ -47,7 +47,7 @@ install -D -p reflink.py %{buildroot}%{python3_sitelib}/dnf-plugins/reflink.py
 
 %changelog
 * Wed Jan 20 2021 Matthew Almond <malmond@fb.com> 0.0.1-3
-- Seperated package into top level "dnf-plugin-cow" concep with implementation
+- Separated package into top level "dnf-plugin-cow" concept with implementation
   "python3-dnf-plugin-cow". This allows for "libdnf-plugin-cow" later without
   renaming this package.
 
