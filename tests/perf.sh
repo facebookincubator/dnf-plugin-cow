@@ -2,7 +2,6 @@
 
 set -euo pipefail
 
-dest=$(mktemp -d /var/tmp/dnfcowperf.XXXXXX)
 packages='bash glibc-langpack-en jq'
 usage() {
         cat >&2 <<END
@@ -46,7 +45,6 @@ fail() {
         exit 1
 }
 dnfroot() {
-        # strace -Tfo /var/tmp/trace.$$.${RANDOM}
         dnf --quiet --releasever=33 --setopt=keepcache=True --setopt=history_record=False --assumeyes --installroot "${dest}" ${*}
 }
 cgroup_path() {
@@ -116,7 +114,7 @@ split_unit() {
         time dnfroot install --downloadonly ${packages}
         diff_io_stat 'Download usage' "${before}"
         before=$(before)
-        time dnfroot install ${packages}
+        btrace time dnfroot --cacheonly install ${packages}
         diff_io_stat 'Install usage' "${before}"
         before=$(before)
         time rpm --root "${dest}" -e jq
@@ -131,31 +129,93 @@ split_unit() {
         time dnfroot install jq
         diff_io_stat 'reinstall jq using dnf' "${before}"
 }
+btrace() {
+	cg=$(cgroup_path)
+	# this is pretty horrible. We want to wrap a command with bpftrace, but
+	# bpftrace -c doesn't handle spaces in parameters/quoting properly. Nor
+	# can it handle a shell script. It wants an ELF binary as ${1} for -c.
+	# the workaround is to make a temp script and tell it to run that.
+	script="$(mktemp "${dest}/bpftracecmd.XXXXXX")"
+	cat <<EOF > "${script}"
+#!/bin/sh
+. ${0} script
+${*}
+EOF
+	# still need to use /bin/sh in the command as it assumes elf, it can't do
+	# shell scripts.
+	cat <<EOF | BPFTRACE_STRLEN=90 bpftrace - -c "/bin/sh ${script}"
+#include <fcntl.h>
+#include <limits.h>
+
+/* remember our own pid, so that we can filter it out from the handlers */
+BEGIN { @mypid = pid }
+
+tracepoint:syscalls:sys_enter_openat* /pid != @mypid && cgroup == cgroupid("${cg}")/ {
+     // printf("%s(%d) openat: %s\\n", comm, pid, str(args->filename));
+     @pidfile[tid] = str(args->filename, 256);
+}
+
+tracepoint:syscalls:sys_exit_openat* /pid != @mypid && cgroup == cgroupid("${cg}")/ {
+    if (args->ret > 0) {
+        \$f = @pidfile[tid];
+        // printf("%s(%d) openat: %s = %d\\n", comm, pid, \$f, args->ret);
+        @tidfdpath[tid, args->ret] = \$f;
+    }
+    delete(@pidfile[tid]);
+}
+
+tracepoint:syscalls:sys_enter_close /pid != @mypid && cgroup == cgroupid("${cg}")/ {
+     \$f = @tidfdpath[tid, args->fd];
+     // printf("%s(%d) close: %d was %s\\n", comm, pid, args->fd, \$f);
+     delete(@tidfdpath[tid, args->fd]);
+}
+
+tracepoint:syscalls:sys_enter_write /pid != @mypid && cgroup == cgroupid("${cg}")/ {
+     @tidfd[tid] = args->fd;
+}
+
+tracepoint:syscalls:sys_exit_write /pid != @mypid && cgroup == cgroupid("${cg}")/ {
+     \$fd = @tidfd[tid];
+     if (\$fd > 2 && args->ret > 0) {
+         \$f = @tidfdpath[tid, \$fd];
+         if (\$f == "") {
+             //printf("anonymous pid = %d, tid = %d, %d = %d\n", pid, tid, \$fd, args->ret);
+         } else {
+         //if (strncmp("${dest}", \$f, ${#dest}) == 0) {
+             @writes[\$f] = sum(args->ret);
+             // printf("%s(%d) write: %d(%s) was %d\\n", comm, pid, \$fd, \$f, \$count);
+         }
+     }
+     delete(@tidfd[tid]);
+}
+
+
+END { clear(@mypid) }
+EOF
+	rm -f "${script}"
+}
 dd_unit() {
+	tool="$(mktemp "${dest}/tool.XXXXXX")"
+	gcc -o "${tool}" "$(dirname "${0}")/middle-reflink.c"
         before=$(before)
         time dd if=/dev/urandom of="${dest}/1" bs=1M count=1024 status=none
         diff_io_stat 'Simple dd of 1G' "${before}"
         before=$(before)
-        cp -a --reflink=never "${dest}/1" "${dest}/2"
-        diff_io_stat 'Simple copy of 1G' "${before}"
-        before=$(before)
-        cp -a --reflink=always "${dest}/1" "${dest}/3"
-        diff_io_stat 'reflink copy of 1G' "${before}"
-        before=$(before)
-        cp -a --reflink=never "${dest}/1" "${dest}/4"
-        diff_io_stat 'Another Simple copy of 1G' "${before}"
-        before=$(before)
-        rm -f "${dest}/1"
-        diff_io_stat 'delete 1G' "${before}"
+	btrace "${tool}" "${dest}/1" "${dest}/2" 1000 1000 10000 100000 $(for i in {1..80} ; do echo 10000000; done) $(for i in {1..5} ; do echo 40000000 ; done)
+        diff_io_stat 'Magical reflink' "${before}"
 }
-trap clean EXIT
 case "${1:?action}" in
         *_unit)
                 "${1}"
                 ;;
         full|split|dd)
-                systemd-run --property=IOAccounting=true --wait --pipe sh -c "$(realpath ${0}) ${1:?test}_unit"
+		dest=$(mktemp -d /root/m/dnfcowperf.XXXXXX)
+		trap clean EXIT
+		systemd-run --property=IOAccounting=true --property=Environment=dest="${dest}" --wait --pipe sh -c "$(realpath ${0}) ${1:?test}_unit"
                 ;;
+	script)
+		# avoid failing when explicitly sourced.
+		;;
         --help|-h|--usage)
                 usage
                 ;;
