@@ -178,7 +178,7 @@ tracepoint:syscalls:sys_exit_write /pid != @mypid && cgroup == cgroupid("${cg}")
      \$fd = @tidfd[tid];
      if (\$fd > 2 && args->ret > 0) {
          \$f = @tidfdpath[tid, \$fd];
-         if (\$f == "") {
+         if (strncmp("", \$f, 1) == 0) {
              //printf("anonymous pid = %d, tid = %d, %d = %d\n", pid, tid, \$fd, args->ret);
          } else {
          //if (strncmp("${dest}", \$f, ${#dest}) == 0) {
