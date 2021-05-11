@@ -15,8 +15,13 @@ class DnfReflink(dnf.Plugin):
 
     name = "reflink"
 
-    def __init__(self, base, cli):
-        super().__init__(base, cli)
+    def config(self):
+        if self.base.conf.downloadonly:
+            return
+        # yumdownloader uses the DownloadCommand plugin. We'll assume any
+        # command that starts with "Download" wants the un-transcoded package
+        if self.cli.command.__class__.__name__.lower().startswith("download"):
+            return
         if os.path.exists(TRANSCODER):
             os.environ["LIBREPO_TRANSCODE_RPMS"] = f"{TRANSCODER} SHA256"
             # T76079288
