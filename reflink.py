@@ -24,5 +24,3 @@ class DnfReflink(dnf.Plugin):
             return
         if os.path.exists(TRANSCODER):
             os.environ["LIBREPO_TRANSCODE_RPMS"] = f"{TRANSCODER} SHA256"
-            # T76079288
-            rpm.addMacro("_pkgverify_level", "none")
