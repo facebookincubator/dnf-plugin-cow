@@ -24,3 +24,10 @@ class DnfReflink(dnf.Plugin):
             return
         if os.path.exists(TRANSCODER):
             os.environ["LIBREPO_TRANSCODE_RPMS"] = f"{TRANSCODER} SHA256"
+
+        # deny list
+        cp = self.read_config(self.base.conf)
+        denylist = (cp.has_section('main') and cp.has_option('main', 'denylist')
+                       and cp.get('main', 'denylist'))
+        if denylist:
+            os.environ["LIBREPO_TRANSCODE_RPMS_DENYLIST"] = denylist
