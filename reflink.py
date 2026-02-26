@@ -8,7 +8,7 @@ import os
 import dnf
 import rpm
 
-TRANSCODER = "/usr/bin/rpm2extents"
+TRANSCODER = "/usr/lib/rpm/rpm2extents"
 
 
 class DnfReflink(dnf.Plugin):
