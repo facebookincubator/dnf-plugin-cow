@@ -8,6 +8,8 @@ import ctypes.util
 import os
 
 import dnf
+import hawkey
+
 
 TRANSCODER_PATHS = [
     "/usr/libexec/rpm/rpm2extents",
@@ -61,6 +63,14 @@ class DnfReflink(dnf.Plugin):
     name = "reflink"
 
     def config(self):
+        # deny list
+        cp = self.read_config(self.base.conf)
+        denylist = (cp.has_section('main') and cp.has_option('main', 'denylist')
+                       and cp.get('main', 'denylist'))
+        if denylist:
+            os.environ["LIBREPO_TRANSCODE_RPMS_DENYLIST"] = denylist
+
+    def resolved(self):
         if self.base.conf.downloadonly:
             return
         # yumdownloader uses the DownloadCommand plugin. We'll assume any
@@ -73,12 +83,19 @@ class DnfReflink(dnf.Plugin):
             return
 
         transcoder = find_transcoder()
-        if transcoder:
-            os.environ["LIBREPO_TRANSCODE_RPMS"] = f"{transcoder} SHA256"
+        if not transcoder:
+            return
 
-        # deny list
-        cp = self.read_config(self.base.conf)
-        denylist = (cp.has_section('main') and cp.has_option('main', 'denylist')
-                       and cp.get('main', 'denylist'))
-        if denylist:
-            os.environ["LIBREPO_TRANSCODE_RPMS_DENYLIST"] = denylist
+        # Detect the checksum algorithms from the repo metadata
+        algos = set()
+        for pkg in self.base.transaction.install_set:
+            chksum = pkg.chksum
+            if chksum:
+                algo_name = hawkey.chksum_name(chksum[0])
+                if algo_name:
+                    algos.add(algo_name.upper())
+
+        if not algos:
+            return
+
+        os.environ["LIBREPO_TRANSCODE_RPMS"] = transcoder + " " + " ".join(sorted(algos))
