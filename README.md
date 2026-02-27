@@ -17,7 +17,7 @@ dnf install python3-dnf-plugin-cow
 
 ## Background
 
-The bulk of the code is in the `rpm` and `librepo` packages. This code turns "transcoding" on by setting an environment variable telling `librepo` to use `/usr/bin/rpm2extents` in a pipeline to convert normal RPMs to extent based ones on disk.
+The bulk of the code is in the `rpm` and `librepo` packages. This code turns "transcoding" on by setting an environment variable telling `librepo` to use `/usr/lib/rpm/rpm2extents` in a pipeline to convert normal RPMs to extent based ones on disk.
 
 ## License
 dnf-plugin-cow is MIT licensed, as found in the LICENSE file.
