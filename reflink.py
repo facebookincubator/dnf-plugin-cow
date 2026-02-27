@@ -8,7 +8,18 @@ import os
 import dnf
 import rpm
 
-TRANSCODER = "/usr/lib/rpm/rpm2extents"
+TRANSCODER_PATHS = [
+    "/usr/libexec/rpm/rpm2extents",
+    "/usr/lib/rpm/rpm2extents",
+    "/usr/bin/rpm2extents",
+]
+
+
+def find_transcoder():
+    for path in TRANSCODER_PATHS:
+        if os.path.exists(path):
+            return path
+    return None
 
 
 class DnfReflink(dnf.Plugin):
@@ -22,8 +33,9 @@ class DnfReflink(dnf.Plugin):
         # command that starts with "Download" wants the un-transcoded package
         if self.cli.command.__class__.__name__.lower().startswith("download"):
             return
-        if os.path.exists(TRANSCODER):
-            os.environ["LIBREPO_TRANSCODE_RPMS"] = f"{TRANSCODER} SHA256"
+        transcoder = find_transcoder()
+        if transcoder:
+            os.environ["LIBREPO_TRANSCODE_RPMS"] = f"{transcoder} SHA256"
 
         # deny list
         cp = self.read_config(self.base.conf)
