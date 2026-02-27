@@ -3,8 +3,6 @@
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 #
-import ctypes
-import ctypes.util
 import os
 
 import dnf
@@ -17,38 +15,21 @@ TRANSCODER_PATHS = [
     "/usr/bin/rpm2extents",
 ]
 
-# Filesystem magic numbers for filesystems supporting reflinks
-XFS_SUPER_MAGIC = 0x58465342
-BTRFS_SUPER_MAGIC = 0x9123683E
-
-REFLINK_FILESYSTEMS = {XFS_SUPER_MAGIC, BTRFS_SUPER_MAGIC}
-
-
-class _statfs(ctypes.Structure):
-    _fields_ = [
-        ("f_type", ctypes.c_long),
-        ("f_bsize", ctypes.c_long),
-        ("f_blocks", ctypes.c_ulong),
-        ("f_bfree", ctypes.c_ulong),
-        ("f_bavail", ctypes.c_ulong),
-        ("f_files", ctypes.c_ulong),
-        ("f_ffree", ctypes.c_ulong),
-        ("f_fsid", ctypes.c_long * 2),
-        ("f_namelen", ctypes.c_long),
-        ("f_frsize", ctypes.c_long),
-        ("f_flags", ctypes.c_long),
-        ("f_spare", ctypes.c_long * 4),
-    ]
-
-
-_libc = ctypes.CDLL(ctypes.util.find_library("c"), use_errno=True)
+REFLINK_FILESYSTEMS = {"xfs", "btrfs"}
 
 
 def _get_fs_type(path):
-    buf = _statfs()
-    if _libc.statfs(path.encode(), ctypes.byref(buf)) != 0:
-        return 0
-    return buf.f_type
+    path = os.path.realpath(path)
+    best = ""
+    fstype = ""
+    with open("/proc/mounts") as f:
+        for line in f:
+            fields = line.split()
+            mountpoint = fields[1]
+            if path.startswith(mountpoint) and len(mountpoint) > len(best):
+                best = mountpoint
+                fstype = fields[2]
+    return fstype
 
 
 def find_transcoder():
