@@ -6,7 +6,6 @@
 import os
 
 import dnf
-import rpm
 
 TRANSCODER_PATHS = [
     "/usr/libexec/rpm/rpm2extents",
