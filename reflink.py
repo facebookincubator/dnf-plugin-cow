@@ -6,7 +6,6 @@
 import os
 
 import dnf
-import hawkey
 
 
 TRANSCODER_PATHS = [
@@ -16,6 +15,16 @@ TRANSCODER_PATHS = [
 ]
 
 REFLINK_FILESYSTEMS = {"xfs", "btrfs"}
+
+# Map digest byte length to algorithm name
+HASH_ALGO_BY_LEN = {
+    16: "MD5",
+    20: "SHA1",
+    28: "SHA224",
+    32: "SHA256",
+    48: "SHA384",
+    64: "SHA512",
+}
 
 
 def _get_fs_type(path):
@@ -72,9 +81,9 @@ class DnfReflink(dnf.Plugin):
         for pkg in self.base.transaction.install_set:
             chksum = pkg.chksum
             if chksum:
-                algo_name = hawkey.chksum_name(chksum[0])
+                algo_name = HASH_ALGO_BY_LEN.get(len(chksum[1]))
                 if algo_name:
-                    algos.add(algo_name.upper())
+                    algos.add(algo_name)
 
         if not algos:
             return
