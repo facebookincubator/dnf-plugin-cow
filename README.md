@@ -5,7 +5,7 @@ A `libdnf5` plugin that enables RPM Copy-on-Write (CoW) / reflink mechanics when
 This repository contains the `reflink` plugin module. The plugin enables RPM “transcoding” (converting downloaded RPMs into extent-based RPMs on disk) by setting environment variables that instruct `librepo` to use `rpm2extents`. Together with changes to `rpm` and `librepo`, this is part of the technical basis for:
 https://fedoraproject.org/wiki/Changes/RPMCoW
 
-## How it works (high level)
+## How it works
 
 When `dnf` resolves a transaction, the plugin may set:
 
@@ -22,7 +22,7 @@ The plugin intentionally does nothing when:
 - the DNF cache directory is **not** on a reflink-capable filesystem
 - `rpm2extents` is not found on the system
 
-## Installation (from packages)
+## Installation
 
 If your distro provides a packaged build, install it via `dnf`:
 
@@ -90,7 +90,7 @@ enabled=1
 denylist=kernel,kernel-core
 ```
 
-## Requirements / when it activates
+## Requirements
 
 In order to do anything, you typically need:
 
