@@ -24,7 +24,7 @@ namespace {
 
 constexpr const char * PLUGIN_NAME = "reflink";
 constexpr PluginAPIVersion REQUIRED_PLUGIN_API_VERSION{.major = 2, .minor = 1};
-constexpr plugin::Version PLUGIN_VERSION{0, 1, 0};
+constexpr plugin::Version PLUGIN_VERSION{0, 2, 0};
 
 constexpr const char * TRANSCODER_PATHS[]{
     "/usr/libexec/rpm/rpm2extents",
