@@ -27,7 +27,7 @@ The plugin intentionally does nothing when:
 If your distro provides a packaged build, install it via `dnf`:
 
 ```bash
-sudo dnf install python3-dnf-plugin-cow
+sudo dnf install libdnf5-plugin-cow
 ```
 
 > Note: packaging names can differ across distributions. If you are building from source, see the next section.
@@ -45,7 +45,7 @@ You’ll need at least:
 - `pkg-config`
 - `libdnf5` development files (often packaged as `libdnf5-devel`)
 
-Example (Fedora):
+Example (Fedora Linux):
 
 ```bash
 sudo dnf install -y cmake gcc-c++ pkgconf-pkg-config libdnf5-devel
